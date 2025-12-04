@@ -56,12 +56,21 @@ createPartyBtn.addEventListener('click', async () => {
     return;
   }
 
-  const code = await Firebase.createParty(name, player);
-  currentParty = code;
-  currentPlayerName = player;
+  console.log('[CREATE PARTY] Starting...', { name, player });
 
-  chrome.storage.local.set({ partyCode: code, playerName: player });
-  loadParty(code, player);
+  try {
+    const code = await Firebase.createParty(name, player);
+    console.log('[CREATE PARTY] Success!', code);
+    
+    currentParty = code;
+    currentPlayerName = player;
+
+    chrome.storage.local.set({ partyCode: code, playerName: player });
+    loadParty(code, player);
+  } catch (err) {
+    console.error('[CREATE PARTY] Failed!', err);
+    alert('Chyba pri vytváraní party: ' + err.message);
+  }
 });
 
 // Pripojiť sa
@@ -74,46 +83,68 @@ joinPartyBtn.addEventListener('click', async () => {
     return;
   }
 
-  const party = await Firebase.joinParty(code, player);
-  if (!party) {
-    alert('Party neexistuje!');
-    return;
+  console.log('[JOIN PARTY] Starting...', { code, player });
+
+  try {
+    const party = await Firebase.joinParty(code, player);
+    if (!party) {
+      console.error('[JOIN PARTY] Party neexistuje');
+      alert('Party s kódom ' + code + ' neexistuje!');
+      return;
+    }
+
+    console.log('[JOIN PARTY] Success!', party);
+    currentParty = code;
+    currentPlayerName = player;
+
+    chrome.storage.local.set({ partyCode: code, playerName: player });
+    loadParty(code, player);
+  } catch (err) {
+    console.error('[JOIN PARTY] Failed!', err);
+    alert('Chyba pri pripájaní: ' + err.message);
   }
-
-  currentParty = code;
-  currentPlayerName = player;
-
-  chrome.storage.local.set({ partyCode: code, playerName: player });
-  loadParty(code, player);
 });
 
 // Načítaj party
 async function loadParty(code, player) {
-  const party = await Firebase.getParty(code);
-  if (!party) return;
-
-  partyTitle.textContent = `Party: ${party.name} (${code})`;
+  console.log('[LOAD PARTY] Starting...', { code, player });
   
-  // Hráči
-  playersDiv.innerHTML = Object.values(party.players || {})
-    .map(p => `<div>👤 ${p.name}</div>`)
-    .join('');
-
-  // Správy
-  updateMessages(party.messages || []);
-  
-  showMenu('partySection');
-
-  // Refresh každé 2 sekundy
-  window.partyRefresh = setInterval(async () => {
-    const updated = await Firebase.getParty(code);
-    if (updated) {
-      playersDiv.innerHTML = Object.values(updated.players || {})
-        .map(p => `<div>👤 ${p.name}</div>`)
-        .join('');
-      updateMessages(updated.messages || []);
+  try {
+    const party = await Firebase.getParty(code);
+    if (!party) {
+      console.error('[LOAD PARTY] Party not found');
+      alert('Chyba: Party sa nenašla');
+      return;
     }
-  }, 2000);
+
+    console.log('[LOAD PARTY] Party loaded', party);
+    partyTitle.textContent = `Party: ${party.name} (${code})`;
+    
+    // Hráči
+    playersDiv.innerHTML = Object.values(party.players || {})
+      .map(p => `<div>👤 ${p.name}</div>`)
+      .join('');
+
+    // Správy
+    updateMessages(party.messages || []);
+    
+    showMenu('partySection');
+
+    // Refresh každé 2 sekundy
+    window.partyRefresh = setInterval(async () => {
+      const updated = await Firebase.getParty(code);
+      if (updated) {
+        console.log('[AUTO REFRESH]', updated);
+        playersDiv.innerHTML = Object.values(updated.players || {})
+          .map(p => `<div>👤 ${p.name}</div>`)
+          .join('');
+        updateMessages(updated.messages || []);
+      }
+    }, 2000);
+  } catch (err) {
+    console.error('[LOAD PARTY] Error!', err);
+    alert('Chyba pri načítaní party: ' + err.message);
+  }
 }
 
 // Aktualizuj správy
@@ -134,13 +165,33 @@ function updateMessages(messages) {
 // Odoslať správu
 sendBtn.addEventListener('click', async () => {
   const text = messageInput.value.trim();
-  if (!text) return;
+  if (!text) {
+    alert('Napíš správu!');
+    return;
+  }
 
-  await Firebase.addMessage(currentParty, currentPlayerName, text);
-  messageInput.value = '';
+  console.log('[SEND MESSAGE] Starting...', { currentParty, currentPlayerName, text });
+  
+  if (!currentParty || !currentPlayerName) {
+    console.error('[SEND MESSAGE] Party info missing!', { currentParty, currentPlayerName });
+    alert('Chyba: Party info nie je nastavená');
+    return;
+  }
 
-  const party = await Firebase.getParty(currentParty);
-  updateMessages(party.messages || []);
+  try {
+    const result = await Firebase.addMessage(currentParty, currentPlayerName, text);
+    console.log('[SEND MESSAGE] Success!', result);
+    messageInput.value = '';
+
+    // Hneď aktualizuj správy
+    const party = await Firebase.getParty(currentParty);
+    if (party) {
+      updateMessages(party.messages || []);
+    }
+  } catch (err) {
+    console.error('[SEND MESSAGE] Failed!', err);
+    alert('Chyba pri odoslaní: ' + err.message);
+  }
 });
 
 messageInput.addEventListener('keypress', (e) => {

@@ -6,18 +6,38 @@ const firebaseConfig = {
   projectId: "a-z-kviz-party"
 };
 
-// Firebase SDK (inline - bez extern. skriptov)
-const db = {
-  ref: (path) => ({ path }),
+// Firebase REST API helper
+const FirebaseAPI = {
   get: async (path) => {
-    const res = await fetch(firebaseConfig.databaseURL + path + '.json');
-    return res.json();
+    try {
+      const url = `${firebaseConfig.databaseURL}${path}.json?auth=${firebaseConfig.apiKey}`;
+      console.log('[API GET]', url);
+      const res = await fetch(url);
+      const data = await res.json();
+      console.log('[API RESULT]', data);
+      return data;
+    } catch (err) {
+      console.error('[API ERROR]', err);
+      return null;
+    }
   },
+  
   set: async (path, data) => {
-    return fetch(firebaseConfig.databaseURL + path + '.json', {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
+    try {
+      const url = `${firebaseConfig.databaseURL}${path}.json?auth=${firebaseConfig.apiKey}`;
+      console.log('[API SET]', url, data);
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      console.log('[API SET RESULT]', result);
+      return result;
+    } catch (err) {
+      console.error('[API SET ERROR]', err);
+      return null;
+    }
   }
 };
 
@@ -28,6 +48,7 @@ const Firebase = {
   },
 
   createParty: async (name, playerName) => {
+    console.log('[CREATE PARTY]', { name, playerName });
     const code = Firebase.generateCode();
     const partyData = {
       name,
@@ -40,13 +61,18 @@ const Firebase = {
       messages: []
     };
     
-    await db.set('/parties/' + code, partyData);
+    const result = await FirebaseAPI.set('/parties/' + code, partyData);
+    console.log('[CREATE PARTY RESULT]', result);
     return code;
   },
 
   joinParty: async (code, playerName) => {
-    const party = await db.get('/parties/' + code);
-    if (!party) return null;
+    console.log('[JOIN PARTY]', { code, playerName });
+    const party = await FirebaseAPI.get('/parties/' + code);
+    if (!party) {
+      console.error('[JOIN PARTY] Party not found:', code);
+      return null;
+    }
     
     const updated = {
       ...party,
@@ -56,24 +82,35 @@ const Firebase = {
       }
     };
     
-    await db.set('/parties/' + code, updated);
+    const result = await FirebaseAPI.set('/parties/' + code, updated);
+    console.log('[JOIN PARTY RESULT]', result);
     return party;
   },
 
   getParty: async (code) => {
-    return db.get('/parties/' + code);
+    console.log('[GET PARTY]', code);
+    const party = await FirebaseAPI.get('/parties/' + code);
+    console.log('[GET PARTY RESULT]', party);
+    return party;
   },
 
   addMessage: async (code, playerName, text) => {
-    const party = await db.get('/parties/' + code);
-    const messages = party.messages || [];
+    console.log('[ADD MESSAGE]', { code, playerName, text });
+    const party = await FirebaseAPI.get('/parties/' + code);
+    if (!party) {
+      console.error('[ADD MESSAGE] Party not found');
+      return null;
+    }
     
+    const messages = party.messages || [];
     messages.push({
       player: playerName,
       text,
       time: new Date().toISOString()
     });
     
-    await db.set('/parties/' + code + '/messages', messages);
+    const result = await FirebaseAPI.set('/parties/' + code + '/messages', messages);
+    console.log('[ADD MESSAGE RESULT]', result);
+    return result;
   }
 };
