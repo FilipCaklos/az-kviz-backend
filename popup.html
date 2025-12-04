@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A-Z Kvíz Party</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <h1>A-Z Kvíz Party</h1>
+        
+        <div id="mainMenu" class="menu">
+            <button id="createPartyBtn" class="btn btn-primary">Vytvoriť novú party</button>
+            <button id="joinPartyBtn" class="btn btn-secondary">Pripojiť sa do party</button>
+        </div>
+
+        <!-- Vytvorenie party -->
+        <div id="createPartyMenu" class="menu hidden">
+            <h2>Vytvorenie Party</h2>
+            <input type="text" id="partyName" placeholder="Názov party" maxlength="50">
+            <input type="text" id="inviteCode" placeholder="Invite kód (automaticky)" readonly>
+            <button id="generateCodeBtn" class="btn btn-primary">Vygenerovať kód</button>
+            <button id="confirmCreateBtn" class="btn btn-success">Potvrdiť</button>
+            <button id="backBtn" class="btn btn-secondary">Späť</button>
+        </div>
+
+        <!-- Pripojenie do party -->
+        <div id="joinPartyMenu" class="menu hidden">
+            <h2>Pripojiť sa do Party</h2>
+            <input type="text" id="playerName" placeholder="Tvoje meno">
+            <input type="text" id="partyCode" placeholder="Invite kód">
+            <button id="joinBtn" class="btn btn-primary">Pripojiť sa</button>
+            <button id="backBtn2" class="btn btn-secondary">Späť</button>
+        </div>
+
+        <!-- Party Room -->
+        <div id="partyRoom" class="menu hidden">
+            <h2>Party: <span id="partyTitle"></span></h2>
+            <div class="party-info">
+                <p>Invite kód: <strong id="displayInviteCode"></strong> 
+                    <button id="copyCodeBtn" class="btn-small">Kopírovať</button>
+                </p>
+                <p>Hráčov: <span id="playerCount">0</span></p>
+            </div>
+
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Napíš správu...">
+                    <button id="sendBtn" class="btn btn-small">Odoslať</button>
+                </div>
+            </div>
+
+            <div class="players-list">
+                <h3>Hráči:</h3>
+                <ul id="playersList"></ul>
+            </div>
+
+            <button id="startQuizBtn" class="btn btn-primary">Spustiť Kvíz</button>
+            <button id="leavePartyBtn" class="btn btn-danger">Opustiť Party</button>
+        </div>
+
+        <!-- Notifikácie -->
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script type="module" src="firebase-api.js"></script>
+    <script src="popup-firebase.js"></script>
+</body>
+</html>

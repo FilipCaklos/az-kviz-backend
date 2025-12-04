@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "A-Z Kvíz Party",
+  "version": "1.0.0",
+  "description": "Pripojiť sa do party na A-Z kvíz s chatom a invite",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.sporcle.com/*",
+    "https://*.az-kviz.sk/*",
+    "https://*.firebaseapp.com/*",
+    "https://*.firebasedatabase.app/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "A-Z Kvíz Party"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.sporcle.com/*", "https://*.az-kviz.sk/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' https://www.gstatic.com; object-src 'self'"
+  }
+}
