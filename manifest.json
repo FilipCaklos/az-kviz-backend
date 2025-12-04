@@ -19,7 +19,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.sporcle.com/*", "https://*.az-kviz.sk/*"],
+      "matches": [
+        "https://www.sporcle.com/*", 
+        "https://*.az-kviz.sk/*",
+        "https://junior.az-kviz.sk/*"
+      ],
       "js": ["content.js"]
     }
   ]

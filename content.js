@@ -1,5 +1,99 @@
 // Injekcia do A-Z Kvíz stránky
 
+// Detekcia invite linku na A-Z Kvíz Junior
+function detectInviteLink() {
+    const inputElement = document.getElementById('copy');
+    
+    if (inputElement && inputElement.value) {
+        const inviteLink = inputElement.value;
+        console.log('🎯 Detected invite link:', inviteLink);
+        
+        // Extrahuj party code z linku
+        const partyCode = extractPartyCode(inviteLink);
+        
+        if (partyCode) {
+            // Pošli do extension storage
+            chrome.storage.local.set({ 
+                detectedInviteLink: inviteLink,
+                detectedPartyCode: partyCode 
+            });
+            
+            // Notifikuj užívateľa
+            showNotification('Invite link detekovaný! Otvor extension pre pripojenie.');
+        }
+    }
+}
+
+// Extrahuj party code z URL
+function extractPartyCode(url) {
+    try {
+        // Príklad: https://junior.az-kviz.sk/lobby?code=ABC123
+        const urlObj = new URL(url);
+        const code = urlObj.searchParams.get('code');
+        return code || null;
+    } catch (e) {
+        // Ak URL parsing zlyhá, skús regex
+        const match = url.match(/code=([A-Z0-9]+)/i);
+        return match ? match[1] : null;
+    }
+}
+
+// Notifikácia na stránke
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 999999;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.3s';
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+// Observer na sledovanie zmien v DOM (ak link ešte nie je načítaný)
+const observer = new MutationObserver((mutations) => {
+    detectInviteLink();
+});
+
+// Spusti detekciu po načítaní stránky
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(detectInviteLink, 1000);
+        
+        // Sleduj zmeny v DOM
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    });
+} else {
+    setTimeout(detectInviteLink, 1000);
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+// Počúvaj na zmeny v input elemente
+setInterval(detectInviteLink, 2000);
+
 // Počúvanie správ z extension
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'startQuiz') {

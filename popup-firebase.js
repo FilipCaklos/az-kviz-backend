@@ -39,6 +39,14 @@ setTimeout(() => {
 }, 500);
 
 function initializeApp() {
+    // Skontroluj či je detekovaný invite link
+    chrome.storage.local.get(['detectedInviteLink', 'detectedPartyCode'], (result) => {
+        if (result.detectedPartyCode && !currentPartyId) {
+            // Zobraz detekovaný link
+            showDetectedInvite(result.detectedPartyCode);
+        }
+    });
+
     // Inicializácia pri otvorení popup
     chrome.storage.local.get(['currentPartyId', 'currentPlayerName', 'currentPlayerRole'], async (result) => {
         if (result.currentPartyId && result.currentPlayerName) {
@@ -65,6 +73,13 @@ function initializeApp() {
     joinPartyBtn.addEventListener('click', () => {
         showMenu(joinPartyMenu);
         hideMenu(mainMenu);
+        
+        // Auto-vyplň party code ak je detekovaný
+        chrome.storage.local.get(['detectedPartyCode'], (result) => {
+            if (result.detectedPartyCode) {
+                partyCodeInput.value = result.detectedPartyCode;
+            }
+        });
     });
 
     generateCodeBtn.addEventListener('click', () => {
@@ -198,11 +213,38 @@ function initializeApp() {
                 });
             }
         });
+        });
     });
+}
 
-    document.querySelectorAll('[id^="backBtn"]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            hideMenu(createPartyMenu);
+function showDetectedInvite(partyCode) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        background: #4299e1;
+        color: white;
+        padding: 12px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        font-size: 13px;
+        text-align: center;
+        cursor: pointer;
+    `;
+    notification.innerHTML = `
+        🎯 Detekovaný invite link z A-Z Kvíz!<br>
+        <strong>${partyCode}</strong><br>
+        <small>Klikni pre rýchle pripojenie</small>
+    `;
+    
+    notification.addEventListener('click', () => {
+        partyCodeInput.value = partyCode;
+        showMenu(joinPartyMenu);
+        hideMenu(mainMenu);
+    });
+    
+    mainMenu.prepend(notification);
+}
+
+function loadPartyRoom(partyData) {u);
             hideMenu(joinPartyMenu);
             showMenu(mainMenu);
         });
