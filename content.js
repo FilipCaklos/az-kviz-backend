@@ -1,73 +1,55 @@
-// Injekcia do A-Z Kvíz stránky
+// Content script na detekciu invite linkov z A-Z Kvíz Junior stránky
 
 console.log('🚀 A-Z Kvíz Party Extension loaded on:', window.location.href);
 
-// Detekcia invite linku na A-Z Kvíz Junior
-function detectInviteLink() {
-    // Skús nájsť input element s ID 'copy'
-    const inputElement = document.getElementById('copy');
-    
-    console.log('🔍 Looking for invite link...', inputElement);
-    
-    if (inputElement && inputElement.value) {
-        const inviteLink = inputElement.value;
-        console.log('🎯 Detected invite link:', inviteLink);
-        
-        // Extrahuj party code z linku
-        const partyCode = extractPartyCode(inviteLink);
-        
-        console.log('📋 Extracted party code:', partyCode);
-        
-        if (partyCode) {
-            // Pošli do extension storage
-            chrome.storage.local.set({ 
-                detectedInviteLink: inviteLink,
-                detectedPartyCode: partyCode 
-            }, () => {
-                console.log('✅ Saved to storage:', partyCode);
-            });
-            
-            // Notifikuj užívateľa
-            showNotification('🎉 Invite link detekovaný! Kód: ' + partyCode);
-        }
-    } else if (inputElement) {
-        console.log('⚠️ Input element found but no value');
-    } else {
-        console.log('❌ Input element #copy not found');
-    }
-}
-
-// Extrahuj party code z URL alebo textu
+// Extrahuj party code z textu (URL alebo samotný kód)
 function extractPartyCode(text) {
+    if (!text) return null;
+    
     try {
         // Ak je to URL, parsuj ho
         if (text.includes('http')) {
-            const urlObj = new URL(text);
-            const code = urlObj.searchParams.get('code');
-            if (code) return code;
+            try {
+                const urlObj = new URL(text);
+                const code = urlObj.searchParams.get('code');
+                if (code) {
+                    console.log('✅ Code z URL parametra:', code);
+                    return code;
+                }
+            } catch (e) {
+                console.log('⚠️ URL parse error:', e);
+            }
         }
         
-        // Skús regex na code parameter
+        // Regex na code parameter v URL
         const codeMatch = text.match(/[?&]code=([A-Z0-9-]+)/i);
-        if (codeMatch) return codeMatch[1];
+        if (codeMatch) {
+            console.log('✅ Code z regex URL:', codeMatch[1]);
+            return codeMatch[1];
+        }
         
-        // Skús regex na lobby/ path
+        // Regex na /lobby/ path
         const lobbyMatch = text.match(/\/lobby\/([A-Z0-9-]+)/i);
-        if (lobbyMatch) return lobbyMatch[1];
+        if (lobbyMatch) {
+            console.log('✅ Code z lobby path:', lobbyMatch[1]);
+            return lobbyMatch[1];
+        }
         
-        // Ak je to len samotný kód (6-10 znakov, písmená a čísla)
-        if (/^[A-Z0-9-]{6,15}$/i.test(text.trim())) {
-            return text.trim().toUpperCase();
+        // Ak je to samotný kód (6-15 znakov, písmená a čísla s pomlčkami)
+        const clean = text.trim().toUpperCase();
+        if (/^[A-Z0-9\-]{6,15}$/.test(clean)) {
+            console.log('✅ Code ako samotný text:', clean);
+            return clean;
         }
         
         return null;
     } catch (e) {
-        console.error('Error extracting party code:', e);
+        console.error('❌ Error extracting party code:', e);
         return null;
     }
 }
 
-// Notifikácia na stránke
+// Zobrazenie notifikácie na stránke
 function showNotification(message) {
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -78,76 +60,105 @@ function showNotification(message) {
         color: white;
         padding: 15px 20px;
         border-radius: 8px;
+        font-weight: bold;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-// Observer na sledovanie zmien v DOM (ak link ešte nie je načítaný)
-const observer = new MutationObserver(() => {
-    detectInviteLink();
-});
+        z-index: 999999;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.remove(), 3000);
+}
 
-// Sledovanie zmien priamo na input elemente
-function watchInputElement() {
+// Detekcia a uloženie invite linku
+function detectAndSaveInviteLink() {
+    const inputElement = document.getElementById('copy');
+    
+    if (inputElement && inputElement.value) {
+        const inviteLink = inputElement.value.trim();
+        console.log('🎯 Found invite link in input:', inviteLink);
+        
+        const partyCode = extractPartyCode(inviteLink);
+        
+        if (partyCode) {
+            console.log('📋 Extracted party code:', partyCode);
+            
+            // Ulož do chrome storage
+            chrome.storage.local.set({
+                detectedInviteLink: inviteLink,
+                detectedPartyCode: partyCode,
+                detectedAt: new Date().toISOString()
+            }, () => {
+                console.log('✅ Saved to storage:', { partyCode, inviteLink });
+            });
+            
+            // Zobraz notifikáciu
+            showNotification(`✨ Kód detekovaný: ${partyCode}`);
+        }
+    }
+}
+
+// Inicializácia - čaká na DOMContentLoaded
+function initialize() {
+    console.log('🔧 Initializing content script...');
+    
+    // 1. Skús hneď detektovať (ak je už načítane)
+    detectAndSaveInviteLink();
+    
+    // 2. Sleduj input element
     const inputElement = document.getElementById('copy');
     if (inputElement) {
-        console.log('✅ Found input element, watching for changes...');
+        console.log('👀 Watching input element for changes');
         
-        // Event listener na zmenu hodnoty
+        // Event listener na input zmenu
         inputElement.addEventListener('input', () => {
-            console.log('📝 Input changed:', inputElement.value);
-            detectInviteLink();
+            console.log('📝 Input value changed');
+            detectAndSaveInviteLink();
         });
         
-        // Aj pre paste event
+        // Event listener na paste
         inputElement.addEventListener('paste', () => {
-            setTimeout(detectInviteLink, 100);
+            console.log('📌 Paste event detected');
+            setTimeout(detectAndSaveInviteLink, 100);
         });
         
-        // Skontroluj aj hneď
-        detectInviteLink();
-    }
-}
-
-// Inicializácia
-function init() {
-    console.log('🔧 Initializing A-Z Kviz Party Extension...');
-    
-    // Skús hneď
-    detectInviteLink();
-    watchInputElement();
-    
-    // Sleduj DOM zmeny
-    if (document.body) {
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
+        // Event listener na change
+        inputElement.addEventListener('change', () => {
+            console.log('🔄 Change event detected');
+            detectAndSaveInviteLink();
         });
     }
     
-    // Pravidelná kontrola každé 3 sekundy
-    setInterval(() => {
-        detectInviteLink();
-        if (!document.getElementById('copy')?.hasAttribute('data-watched')) {
-            watchInputElement();
+    // 3. MutationObserver pre prípad dynamického načítania
+    const observer = new MutationObserver((mutations) => {
+        // Skontroluj či input element existuje teraz
+        const input = document.getElementById('copy');
+        if (input && !input.hasAttribute('data-watched')) {
+            console.log('🆕 Input element added to DOM, watching it');
+            input.setAttribute('data-watched', 'true');
+            
+            input.addEventListener('input', detectAndSaveInviteLink);
+            input.addEventListener('paste', () => {
+                setTimeout(detectAndSaveInviteLink, 100);
+            });
+            
+            detectAndSaveInviteLink();
         }
-    }, 3000);
-}
-
-// Spusti po načítaní
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
     });
-} else {
-    setTimeout(detectInviteLink, 1000);
     
     observer.observe(document.body, {
         childList: true,
         subtree: true
+    });
+    
+    console.log('✅ Content script initialized');
+}
+
+// Spusť po načítaní stránky
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
     });
 }
 

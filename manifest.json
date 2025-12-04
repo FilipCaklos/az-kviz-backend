@@ -10,6 +10,7 @@
   "host_permissions": [
     "https://www.sporcle.com/*",
     "https://*.az-kviz.sk/*",
+    "https://*.ceskatelevize.cz/*",
     "https://*.firebaseapp.com/*",
     "https://*.firebasedatabase.app/*"
   ],
@@ -22,7 +23,9 @@
       "matches": [
         "https://www.sporcle.com/*", 
         "https://*.az-kviz.sk/*",
-        "https://junior.az-kviz.sk/*"
+        "https://junior.az-kviz.sk/*",
+        "https://*.ceskatelevize.cz/*",
+        "https://decko.ceskatelevize.cz/*"
       ],
       "js": ["content.js"]
     }
