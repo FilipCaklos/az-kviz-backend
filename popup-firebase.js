@@ -213,6 +213,13 @@ function initializeApp() {
                 });
             }
         });
+    });
+
+    document.querySelectorAll('[id^="backBtn"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            hideMenu(createPartyMenu);
+            hideMenu(joinPartyMenu);
+            showMenu(mainMenu);
         });
     });
 }
