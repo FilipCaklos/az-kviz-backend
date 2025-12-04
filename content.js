@@ -1,8 +1,13 @@
 // Injekcia do A-Z Kvíz stránky
 
+console.log('🚀 A-Z Kvíz Party Extension loaded on:', window.location.href);
+
 // Detekcia invite linku na A-Z Kvíz Junior
 function detectInviteLink() {
+    // Skús nájsť input element s ID 'copy'
     const inputElement = document.getElementById('copy');
+    
+    console.log('🔍 Looking for invite link...', inputElement);
     
     if (inputElement && inputElement.value) {
         const inviteLink = inputElement.value;
@@ -11,30 +16,54 @@ function detectInviteLink() {
         // Extrahuj party code z linku
         const partyCode = extractPartyCode(inviteLink);
         
+        console.log('📋 Extracted party code:', partyCode);
+        
         if (partyCode) {
             // Pošli do extension storage
             chrome.storage.local.set({ 
                 detectedInviteLink: inviteLink,
                 detectedPartyCode: partyCode 
+            }, () => {
+                console.log('✅ Saved to storage:', partyCode);
             });
             
             // Notifikuj užívateľa
-            showNotification('Invite link detekovaný! Otvor extension pre pripojenie.');
+            showNotification('🎉 Invite link detekovaný! Kód: ' + partyCode);
         }
+    } else if (inputElement) {
+        console.log('⚠️ Input element found but no value');
+    } else {
+        console.log('❌ Input element #copy not found');
     }
 }
 
-// Extrahuj party code z URL
-function extractPartyCode(url) {
+// Extrahuj party code z URL alebo textu
+function extractPartyCode(text) {
     try {
-        // Príklad: https://junior.az-kviz.sk/lobby?code=ABC123
-        const urlObj = new URL(url);
-        const code = urlObj.searchParams.get('code');
-        return code || null;
+        // Ak je to URL, parsuj ho
+        if (text.includes('http')) {
+            const urlObj = new URL(text);
+            const code = urlObj.searchParams.get('code');
+            if (code) return code;
+        }
+        
+        // Skús regex na code parameter
+        const codeMatch = text.match(/[?&]code=([A-Z0-9-]+)/i);
+        if (codeMatch) return codeMatch[1];
+        
+        // Skús regex na lobby/ path
+        const lobbyMatch = text.match(/\/lobby\/([A-Z0-9-]+)/i);
+        if (lobbyMatch) return lobbyMatch[1];
+        
+        // Ak je to len samotný kód (6-10 znakov, písmená a čísla)
+        if (/^[A-Z0-9-]{6,15}$/i.test(text.trim())) {
+            return text.trim().toUpperCase();
+        }
+        
+        return null;
     } catch (e) {
-        // Ak URL parsing zlyhá, skús regex
-        const match = url.match(/code=([A-Z0-9]+)/i);
-        return match ? match[1] : null;
+        console.error('Error extracting party code:', e);
+        return null;
     }
 }
 
@@ -50,33 +79,64 @@ function showNotification(message) {
         padding: 15px 20px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 999999;
-        font-family: 'Segoe UI', sans-serif;
-        font-size: 14px;
-        animation: slideIn 0.3s ease;
-    `;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transition = 'opacity 0.3s';
-        setTimeout(() => notification.remove(), 300);
-    }, 4000);
-}
-
 // Observer na sledovanie zmien v DOM (ak link ešte nie je načítaný)
-const observer = new MutationObserver((mutations) => {
+const observer = new MutationObserver(() => {
     detectInviteLink();
 });
 
-// Spusti detekciu po načítaní stránky
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(detectInviteLink, 1000);
+// Sledovanie zmien priamo na input elemente
+function watchInputElement() {
+    const inputElement = document.getElementById('copy');
+    if (inputElement) {
+        console.log('✅ Found input element, watching for changes...');
         
-        // Sleduj zmeny v DOM
+        // Event listener na zmenu hodnoty
+        inputElement.addEventListener('input', () => {
+            console.log('📝 Input changed:', inputElement.value);
+            detectInviteLink();
+        });
+        
+        // Aj pre paste event
+        inputElement.addEventListener('paste', () => {
+            setTimeout(detectInviteLink, 100);
+        });
+        
+        // Skontroluj aj hneď
+        detectInviteLink();
+    }
+}
+
+// Inicializácia
+function init() {
+    console.log('🔧 Initializing A-Z Kviz Party Extension...');
+    
+    // Skús hneď
+    detectInviteLink();
+    watchInputElement();
+    
+    // Sleduj DOM zmeny
+    if (document.body) {
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+    
+    // Pravidelná kontrola každé 3 sekundy
+    setInterval(() => {
+        detectInviteLink();
+        if (!document.getElementById('copy')?.hasAttribute('data-watched')) {
+            watchInputElement();
+        }
+    }, 3000);
+}
+
+// Spusti po načítaní
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
         observer.observe(document.body, {
             childList: true,
             subtree: true

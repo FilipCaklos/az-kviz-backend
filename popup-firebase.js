@@ -305,15 +305,29 @@ function updateChatMessages(messages) {
                     </div>`;
         } else {
             const time = new Date(msg.timestamp).toLocaleTimeString('sk-SK', {hour: '2-digit', minute: '2-digit'});
+            
+            // Detekuj linky v správe a sprav ich klikliteľné
+            const messageWithLinks = makeLinksClickable(msg.messageText);
+            
             return `<div class="chat-message">
                         <span class="sender">${msg.playerName}</span>
                         <span class="time">${time}</span>
-                        <div>${msg.messageText}</div>
+                        <div>${messageWithLinks}</div>
                     </div>`;
         }
     }).join('');
 
     chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Funkcia na detekciu a vytvorenie klikliteľných linkov
+function makeLinksClickable(text) {
+    // Regex na detekciu URL
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    
+    return text.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" style="color: #667eea; text-decoration: underline; cursor: pointer;">${url}</a>`;
+    });
 }
 
 function showMenu(element) {
