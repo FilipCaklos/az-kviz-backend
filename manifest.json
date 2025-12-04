@@ -22,8 +22,5 @@
       "matches": ["https://www.sporcle.com/*", "https://*.az-kviz.sk/*"],
       "js": ["content.js"]
     }
-  ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' https://www.gstatic.com; object-src 'self'"
-  }
+  ]
 }
