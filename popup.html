@@ -1,72 +1,169 @@
 <!DOCTYPE html>
-<html lang="sk">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A-Z Kvíz Party</title>
-    <link rel="stylesheet" href="popup.css">
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 400px;
+      height: 600px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 15px;
+    }
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .menu button {
+      padding: 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .menu button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .section { display: none; }
+    .section.active { display: flex; }
+    .create-section, .join-section, .party-section {
+      flex-direction: column;
+      gap: 10px;
+    }
+    input, button {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    button.primary {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #f0f0f0;
+      cursor: pointer;
+    }
+    button.primary:hover { background: #5568d3; }
+    #partyTitle {
+      color: white;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    #players {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding: 10px;
+      font-size: 13px;
+    }
+    #chat {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #messages {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      overflow-y: auto;
+      padding: 10px;
+      font-size: 12px;
+    }
+    .message {
+      margin-bottom: 8px;
+      padding: 6px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    .message .sender {
+      font-weight: 600;
+      color: #667eea;
+    }
+    .message .time {
+      font-size: 10px;
+      color: #999;
+      margin-left: 5px;
+    }
+    #messageInput {
+      padding: 8px;
+      font-size: 13px;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+    .button-group button {
+      flex: 1;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.3) !important;
+      color: white !important;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>A-Z Kvíz Party</h1>
-        
-        <div id="mainMenu" class="menu">
-            <button id="createPartyBtn" class="btn btn-primary">Vytvoriť novú party</button>
-            <button id="joinPartyBtn" class="btn btn-secondary">Pripojiť sa do party</button>
-        </div>
-
-        <!-- Vytvorenie party -->
-        <div id="createPartyMenu" class="menu hidden">
-            <h2>Vytvorenie Party</h2>
-            <input type="text" id="partyName" placeholder="Názov party" maxlength="50">
-            <input type="text" id="inviteCode" placeholder="Invite kód (automaticky)" readonly>
-            <button id="generateCodeBtn" class="btn btn-primary">Vygenerovať kód</button>
-            <button id="confirmCreateBtn" class="btn btn-success">Potvrdiť</button>
-            <button id="backBtn" class="btn btn-secondary">Späť</button>
-        </div>
-
-        <!-- Pripojenie do party -->
-        <div id="joinPartyMenu" class="menu hidden">
-            <h2>Pripojiť sa do Party</h2>
-            <input type="text" id="playerName" placeholder="Tvoje meno">
-            <input type="text" id="partyCode" placeholder="Invite kód">
-            <button id="joinBtn" class="btn btn-primary">Pripojiť sa</button>
-            <button id="backBtn2" class="btn btn-secondary">Späť</button>
-        </div>
-
-        <!-- Party Room -->
-        <div id="partyRoom" class="menu hidden">
-            <h2>Party: <span id="partyTitle"></span></h2>
-            <div class="party-info">
-                <p>Invite kód: <strong id="displayInviteCode"></strong> 
-                    <button id="copyCodeBtn" class="btn-small">Kopírovať</button>
-                </p>
-                <p>Hráčov: <span id="playerCount">0</span></p>
-            </div>
-
-            <div class="chat-container">
-                <div id="chatMessages" class="chat-messages"></div>
-                <div class="chat-input">
-                    <input type="text" id="messageInput" placeholder="Napíš správu...">
-                    <button id="sendBtn" class="btn btn-small">Odoslať</button>
-                </div>
-            </div>
-
-            <div class="players-list">
-                <h3>Hráči:</h3>
-                <ul id="playersList"></ul>
-            </div>
-
-            <button id="startQuizBtn" class="btn btn-primary">Spustiť Kvíz</button>
-            <button id="leavePartyBtn" class="btn btn-danger">Opustiť Party</button>
-        </div>
-
-        <!-- Notifikácie -->
-        <div id="notification" class="notification"></div>
+  <div class="container">
+    <!-- Hlavné menu -->
+    <div id="mainMenu" class="section active menu">
+      <button class="primary" id="createBtn">Vytvoriť party</button>
+      <button class="primary" id="joinBtn">Pripojiť sa</button>
     </div>
 
-    <script src="firebase-compat.js"></script>
-    <script src="firebase-api.js"></script>
-    <script src="popup-firebase.js"></script>
+    <!-- Vytváranie party -->
+    <div id="createSection" class="section create-section">
+      <button class="back-btn" onclick="showMenu('mainMenu')">← Späť</button>
+      <input type="text" id="partyNameInput" placeholder="Názov party">
+      <input type="text" id="playerNameInput" placeholder="Tvoje meno">
+      <button class="primary" id="createPartyBtn">Vytvoriť</button>
+    </div>
+
+    <!-- Pripojenie sa -->
+    <div id="joinSection" class="section join-section">
+      <button class="back-btn" onclick="showMenu('mainMenu')">← Späť</button>
+      <input type="text" id="codeInput" placeholder="Party kód">
+      <input type="text" id="playerNameInput2" placeholder="Tvoje meno">
+      <button class="primary" id="joinPartyBtn">Pripojiť sa</button>
+    </div>
+
+    <!-- Party room -->
+    <div id="partySection" class="section party-section">
+      <div id="partyTitle"></div>
+      <div>Hráči:</div>
+      <div id="players"></div>
+      <div id="chat">
+        <div id="messages"></div>
+        <div style="display: flex; gap: 5px;">
+          <input type="text" id="messageInput" placeholder="Správa..." style="flex: 1;">
+          <button class="primary" id="sendBtn" style="flex: 0.3;">Odoslať</button>
+        </div>
+      </div>
+      <button class="secondary" id="leaveBtn">Opustiť party</button>
+    </div>
+  </div>
+
+  <script src="firebase.js"></script>
+  <script src="popup.js"></script>
 </body>
 </html>

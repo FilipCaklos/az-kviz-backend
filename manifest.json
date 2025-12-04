@@ -2,15 +2,11 @@
   "manifest_version": 3,
   "name": "A-Z Kvíz Party",
   "version": "1.0.0",
-  "description": "Pripojiť sa do party na A-Z kvíz s chatom a invite",
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
+  "description": "Party mode s chatom pre A-Z kvíz",
+  "permissions": ["storage", "activeTab"],
   "host_permissions": [
-    "https://www.sporcle.com/*",
-    "https://*.az-kviz.sk/*",
-    "https://*.ceskatelevize.cz/*",
+    "https://decko.ceskatelevize.cz/*",
+    "https://junior.az-kviz.sk/*",
     "https://*.firebaseapp.com/*",
     "https://*.firebasedatabase.app/*"
   ],
@@ -20,13 +16,7 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://decko.ceskatelevize.cz/*",
-        "https://junior.az-kviz.sk/*",
-        "https://*.az-kviz.sk/*",
-        "https://*.ceskatelevize.cz/*",
-        "https://www.sporcle.com/*"
-      ],
+      "matches": ["https://decko.ceskatelevize.cz/*", "https://junior.az-kviz.sk/*"],
       "js": ["content.js"],
       "run_at": "document_start"
     }
