@@ -39,11 +39,11 @@ class FirebaseAPI {
                 messages: {}
             };
 
-            await set(partyRef, partyData);
+            await partyRef.set(partyData);
 
             // Systémová správa
             const messageRef = database.ref(`parties/${partyId}/messages`).push();
-            await set(messageRef, {
+            await messageRef.set({
                 playerName: 'System',
                 messageType: 'system',
                 messageText: `Party "${partyName}" bola vytvorená`,
