@@ -1,6 +1,6 @@
 // Firebase konfigurácia
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getDatabase, ref, set, push, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import { initializeApp } from './firebase-app.js';
+import { getDatabase, ref, set, push, onValue, remove, update } from './firebase-database.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDFXxLWcX_5pQEf7xu3wdtDJgHhWikoO30",
