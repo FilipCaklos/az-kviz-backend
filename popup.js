@@ -118,6 +118,11 @@ async function loadParty(code, player) {
     }
 
     console.log('[LOAD PARTY] Party loaded', party);
+    
+    // Ulož do globálnych premenných
+    currentParty = code;
+    currentPlayerName = player;
+    
     partyTitle.textContent = `Party: ${party.name} (${code})`;
     
     // Hráči
@@ -131,6 +136,7 @@ async function loadParty(code, player) {
     showMenu('partySection');
 
     // Refresh každé 2 sekundy
+    if (window.partyRefresh) clearInterval(window.partyRefresh);
     window.partyRefresh = setInterval(async () => {
       const updated = await Firebase.getParty(code);
       if (updated) {
@@ -170,28 +176,36 @@ sendBtn.addEventListener('click', async () => {
     return;
   }
 
-  console.log('[SEND MESSAGE] Starting...', { currentParty, currentPlayerName, text });
+  console.log('[SEND MESSAGE] Starting...', { text });
   
-  if (!currentParty || !currentPlayerName) {
-    console.error('[SEND MESSAGE] Party info missing!', { currentParty, currentPlayerName });
-    alert('Chyba: Party info nie je nastavená');
-    return;
-  }
-
-  try {
-    const result = await Firebase.addMessage(currentParty, currentPlayerName, text);
-    console.log('[SEND MESSAGE] Success!', result);
-    messageInput.value = '';
-
-    // Hneď aktualizuj správy
-    const party = await Firebase.getParty(currentParty);
-    if (party) {
-      updateMessages(party.messages || []);
+  // Skontroluj storage pre party info
+  chrome.storage.local.get(['partyCode', 'playerName'], async (result) => {
+    const partyCode = result.partyCode;
+    const playerName = result.playerName;
+    
+    console.log('[SEND MESSAGE] Got from storage:', { partyCode, playerName });
+    
+    if (!partyCode || !playerName) {
+      console.error('[SEND MESSAGE] Party info missing from storage!');
+      alert('Chyba: Party info nie je nastavená. Pripojiť sa znova.');
+      return;
     }
-  } catch (err) {
-    console.error('[SEND MESSAGE] Failed!', err);
-    alert('Chyba pri odoslaní: ' + err.message);
-  }
+
+    try {
+      const result2 = await Firebase.addMessage(partyCode, playerName, text);
+      console.log('[SEND MESSAGE] Success!', result2);
+      messageInput.value = '';
+
+      // Hneď aktualizuj správy
+      const party = await Firebase.getParty(partyCode);
+      if (party) {
+        updateMessages(party.messages || []);
+      }
+    } catch (err) {
+      console.error('[SEND MESSAGE] Failed!', err);
+      alert('Chyba pri odoslaní: ' + err.message);
+    }
+  });
 });
 
 messageInput.addEventListener('keypress', (e) => {
