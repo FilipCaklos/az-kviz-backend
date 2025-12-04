@@ -251,13 +251,6 @@ function showDetectedInvite(partyCode) {
     mainMenu.prepend(notification);
 }
 
-function loadPartyRoom(partyData) {u);
-            hideMenu(joinPartyMenu);
-            showMenu(mainMenu);
-        });
-    });
-}
-
 function loadPartyRoom(partyData) {
     hideMenu(mainMenu);
     hideMenu(createPartyMenu);
