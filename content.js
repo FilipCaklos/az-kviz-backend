@@ -102,6 +102,19 @@ function detectAndSaveInviteLink() {
 function initialize() {
     console.log('🔧 Initializing content script...');
     
+    // Debug: Zobraz všetky input polia
+    const allInputs = document.querySelectorAll('input');
+    console.log('📊 Found inputs:', allInputs.length);
+    allInputs.forEach((input, idx) => {
+        console.log(`Input ${idx}:`, {
+            id: input.id,
+            name: input.name,
+            type: input.type,
+            value: input.value?.substring(0, 50),
+            class: input.className
+        });
+    });
+    
     // 1. Skús hneď detektovať (ak je už načítane)
     detectAndSaveInviteLink();
     
