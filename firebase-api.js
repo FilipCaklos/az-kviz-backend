@@ -1,7 +1,4 @@
-// Firebase konfigurácia
-import { initializeApp } from './firebase-app.js';
-import { getDatabase, ref, set, push, onValue, remove, update } from './firebase-database.js';
-
+// Firebase konfigurácia - pomocou globálneho firebase objektu
 const firebaseConfig = {
   apiKey: "AIzaSyDFXxLWcX_5pQEf7xu3wdtDJgHhWikoO30",
   authDomain: "a-z-kviz-party.firebaseapp.com",
@@ -13,8 +10,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
 // Firebase API wrapper
 class FirebaseAPI {
@@ -22,7 +19,7 @@ class FirebaseAPI {
     static async createParty(partyName, hostName, partyCode) {
         try {
             const partyId = partyCode;
-            const partyRef = ref(database, `parties/${partyId}`);
+            const partyRef = database.ref(`parties/${partyId}`);
             
             const partyData = {
                 partyId: partyId,
@@ -45,7 +42,7 @@ class FirebaseAPI {
             await set(partyRef, partyData);
 
             // Systémová správa
-            const messageRef = push(ref(database, `parties/${partyId}/messages`));
+            const messageRef = database.ref(`parties/${partyId}/messages`).push();
             await set(messageRef, {
                 playerName: 'System',
                 messageType: 'system',
@@ -69,10 +66,10 @@ class FirebaseAPI {
     // Pripojenie do party
     static async joinParty(partyCode, playerName) {
         try {
-            const partyRef = ref(database, `parties/${partyCode}`);
+            const partyRef = database.ref(`parties/${partyCode}`);
             
             return new Promise((resolve) => {
-                onValue(partyRef, async (snapshot) => {
+                partyRef.once('value', async (snapshot) => {
                     if (!snapshot.exists()) {
                         resolve({ success: false, error: 'Party s týmto kódom neexistuje' });
                         return;
@@ -87,8 +84,8 @@ class FirebaseAPI {
                     }
 
                     // Pridaj hráča
-                    const playerRef = ref(database, `parties/${partyCode}/players/${playerName}`);
-                    await set(playerRef, {
+                    const playerRef = database.ref(`parties/${partyCode}/players/${playerName}`);
+                    await playerRef.set({
                         playerName: playerName,
                         isHost: false,
                         score: 0,
@@ -96,8 +93,8 @@ class FirebaseAPI {
                     });
 
                     // Systémová správa
-                    const messageRef = push(ref(database, `parties/${partyCode}/messages`));
-                    await set(messageRef, {
+                    const messageRef = database.ref(`parties/${partyCode}/messages`).push();
+                    await messageRef.set({
                         playerName: 'System',
                         messageType: 'system',
                         messageText: `${playerName} sa pripojil/a do party`,
@@ -110,7 +107,7 @@ class FirebaseAPI {
                         partyName: partyData.partyName,
                         hostName: partyData.hostName
                     });
-                }, { onlyOnce: true });
+                });
             });
         } catch (error) {
             console.error('Error joining party:', error);
@@ -121,10 +118,10 @@ class FirebaseAPI {
     // Získanie party dát
     static async getPartyData(partyId) {
         try {
-            const partyRef = ref(database, `parties/${partyId}`);
+            const partyRef = database.ref(`parties/${partyId}`);
             
             return new Promise((resolve) => {
-                onValue(partyRef, (snapshot) => {
+                partyRef.once('value', (snapshot) => {
                     if (!snapshot.exists()) {
                         resolve({ success: false, error: 'Party sa nenašla' });
                         return;
@@ -144,7 +141,7 @@ class FirebaseAPI {
                         players: players,
                         messages: messages
                     });
-                }, { onlyOnce: true });
+                });
             });
         } catch (error) {
             console.error('Error getting party data:', error);
@@ -155,12 +152,12 @@ class FirebaseAPI {
     // Opustenie party
     static async leaveParty(partyId, playerName) {
         try {
-            const playerRef = ref(database, `parties/${partyId}/players/${playerName}`);
-            await remove(playerRef);
+            const playerRef = database.ref(`parties/${partyId}/players/${playerName}`);
+            await playerRef.remove();
 
             // Systémová správa
-            const messageRef = push(ref(database, `parties/${partyId}/messages`));
-            await set(messageRef, {
+            const messageRef = database.ref(`parties/${partyId}/messages`).push();
+            await messageRef.set({
                 playerName: 'System',
                 messageType: 'system',
                 messageText: `${playerName} opustil/a party`,
@@ -177,8 +174,8 @@ class FirebaseAPI {
     // Posielanie správy
     static async sendMessage(partyId, playerName, message) {
         try {
-            const messageRef = push(ref(database, `parties/${partyId}/messages`));
-            await set(messageRef, {
+            const messageRef = database.ref(`parties/${partyId}/messages`).push();
+            await messageRef.set({
                 playerName: playerName,
                 messageType: 'user',
                 messageText: message,
@@ -194,8 +191,8 @@ class FirebaseAPI {
 
     // Real-time listening na zmeny
     static listenToParty(partyId, callback) {
-        const partyRef = ref(database, `parties/${partyId}`);
-        return onValue(partyRef, (snapshot) => {
+        const partyRef = database.ref(`parties/${partyId}`);
+        return partyRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
                 callback(snapshot.val());
             }
@@ -205,8 +202,8 @@ class FirebaseAPI {
     // Spustenie kvízu
     static async startQuiz(partyId) {
         try {
-            const partyRef = ref(database, `parties/${partyId}`);
-            await update(partyRef, {
+            const partyRef = database.ref(`parties/${partyId}`);
+            await partyRef.update({
                 quizStarted: true,
                 quizStartedAt: new Date().toISOString()
             });
@@ -221,5 +218,3 @@ class FirebaseAPI {
 
 // Export
 window.FirebaseAPI = FirebaseAPI;
-window.firebaseDatabase = database;
-window.firebaseRef = ref;
